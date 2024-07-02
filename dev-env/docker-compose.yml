@@ -1,0 +1,65 @@
+name: temporal-dev-env
+
+services:
+  postgres:
+    image: postgres:16.3-alpine
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d
+    ports:
+      - "5442:5432"
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+      POSTGRES_MULTIPLE_DATABASES: temporal,temporal_visibility
+    user: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  temporal:
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - DB=postgres12
+      - DB_PORT=5432
+      - DBNAME=temporal
+      - VISIBILITY_DBNAME=temporal_visibility
+      - POSTGRES_USER=postgres
+      - POSTGRES_PWD=postgres
+      - POSTGRES_SEEDS=postgres
+      - SKIP_DB_CREATE=true
+      - DYNAMIC_CONFIG_FILE_PATH=config/dynamic-config/development-sql.yaml
+    image: temporalio/auto-setup:1.24.2
+    ports:
+      - "7233:7233"
+    volumes:
+      - ./temporal:/etc/temporal/config/dynamic-config
+
+  temporal-admin-tools:
+    depends_on:
+      - temporal
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_CLI_ADDRESS=temporal:7233
+    image: temporalio/admin-tools:1.24.2-tctl-1.18.1-cli-0.13.0
+    stdin_open: true
+    tty: true
+
+  temporal-ui:
+    depends_on:
+      - temporal
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_CORS_ORIGINS=http://localhost:3000
+    image: temporalio/ui:2.27.3
+    ports:
+      - "8089:8080"
+
+volumes:
+  postgres-data:
+  minio-data:
