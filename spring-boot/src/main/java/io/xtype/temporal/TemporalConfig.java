@@ -24,7 +24,6 @@ public class TemporalConfig {
         new ByteArrayPayloadConverter(),
         new ProtobufJsonPayloadConverter(),
         new ProtobufPayloadConverter(),
-        new JacksonJsonPayloadConverter(),
         new JacksonJsonPayloadConverter(objectMapper)
     );
   }
