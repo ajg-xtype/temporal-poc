@@ -15,7 +15,7 @@ import org.springframework.context.annotation.Configuration;
 public class TemporalConfig {
 
   /**
-   * use Spring's object mapper with Kotlin support
+   * use Spring's object mapper
    */
   @Bean
   public DataConverter dataConverter(ObjectMapper objectMapper) {

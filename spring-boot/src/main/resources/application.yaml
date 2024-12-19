@@ -5,17 +5,5 @@ spring:
     connection:
       target: localhost:7233
     namespace: default
-    workers:
-      - name: ${spring.application.name}-demo-v1
-        task-queue: demo-v1
-        capacity:
-          max-concurrent-workflow-task-pollers: 10
-          max-concurrent-activity-task-pollers: 10
-        rate-limits:
-          max-worker-activities-per-second: 0
-          max-task-queue-activities-per-second: 0
-    workflow-cache:
-      max-instances: 10
-      max-threads: 10
     workersAutoDiscovery:
       packages: io.xtype.temporal

@@ -27,7 +27,7 @@ public class TriggerDemoWorkflowController {
         DemoWorkflow.class,
         WorkflowOptions
             .newBuilder()
-            .setTaskQueue(TaskQueue.DEMO_V1)
+            .setTaskQueue(TaskQueue.WORKFLOW_V1)
             .setWorkflowId(id)
             .build()
     );

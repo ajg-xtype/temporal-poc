@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
-@ActivityImpl(taskQueues = {TaskQueue.DEMO_V1})
+@ActivityImpl(taskQueues = {TaskQueue.WORKFLOW_V1})
 public class LocalDemoActivitiesImpl implements LocalDemoActivities {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(LocalDemoActivitiesImpl.class);

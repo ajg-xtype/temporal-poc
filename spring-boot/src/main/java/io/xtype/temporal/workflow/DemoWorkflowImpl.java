@@ -5,31 +5,42 @@ import io.temporal.spring.boot.WorkflowImpl;
 import io.temporal.workflow.Workflow;
 import io.xtype.temporal.TaskQueue;
 import io.xtype.temporal.activity.LocalDemoActivities;
-import io.xtype.temporal.activity.RemoteDemoActivities;
+import io.xtype.temporal.activity.LongRunningRemoteActivity;
+import io.xtype.temporal.activity.SimpleRemoteActivity;
 import java.time.Duration;
 
-@WorkflowImpl(taskQueues = {TaskQueue.DEMO_V1})
+@WorkflowImpl(taskQueues = {TaskQueue.WORKFLOW_V1})
 public class DemoWorkflowImpl implements DemoWorkflow {
 
   private String message = "";
   private String remoteResult;
 
-  private final ActivityOptions activityOptions = ActivityOptions.newBuilder()
-      .setStartToCloseTimeout(Duration.ofSeconds(5))
-      .build();
-
   private final LocalDemoActivities localActivities = Workflow.newActivityStub(
       LocalDemoActivities.class,
-      activityOptions);
+      ActivityOptions.newBuilder()
+          .setStartToCloseTimeout(Duration.ofSeconds(5))
+          .setTaskQueue(TaskQueue.WORKFLOW_V1)
+          .build());
 
-  private final RemoteDemoActivities remoteActivities = Workflow.newActivityStub(
-      RemoteDemoActivities.class, activityOptions);
+  private final SimpleRemoteActivity simpleRemoteActivity = Workflow.newActivityStub(
+      SimpleRemoteActivity.class, ActivityOptions.newBuilder()
+          .setStartToCloseTimeout(Duration.ofSeconds(5))
+          .setTaskQueue(TaskQueue.TASK_WORKER_V1)
+          .build());
+
+  private final LongRunningRemoteActivity longRunningRemoteActivity = Workflow.newActivityStub(
+      LongRunningRemoteActivity.class, ActivityOptions.newBuilder()
+          .setScheduleToCloseTimeout(Duration.ofHours(1))
+          .setHeartbeatTimeout(Duration.ofSeconds(30))
+          .setTaskQueue(TaskQueue.TASK_WORKER_V1)
+          .build());
 
   // WorkflowMethod
   @Override
   public String exec(WorkflowInput input) {
+    longRunningRemoteActivity.longRunningTaskInRemoteWorker();
 
-    remoteResult = remoteActivities.doSomethingInRemoteWorker(input.firstName());
+    remoteResult = simpleRemoteActivity.doSomethingInRemoteWorker(input.firstName());
 
     Workflow.await(() -> !message.isEmpty());
 

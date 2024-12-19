@@ -9,16 +9,21 @@ import io.temporal.client.WorkflowStub;
 import io.temporal.testing.TestWorkflowEnvironment;
 import io.xtype.temporal.TaskQueue;
 import io.xtype.temporal.activity.LocalDemoActivities;
-import io.xtype.temporal.activity.RemoteDemoActivities;
+import io.xtype.temporal.activity.LongRunningRemoteActivity;
+import io.xtype.temporal.activity.SimpleRemoteActivity;
 import io.xtype.temporal.workflow.DemoWorkflow.WorkflowInput;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
 class DemoWorkflowImplTest {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(DemoWorkflowImplTest.class);
 
   @Autowired
   private LocalDemoActivities localDemoActivities;
@@ -26,17 +31,22 @@ class DemoWorkflowImplTest {
   @Test
   void sunshine_case() throws TimeoutException {
     var testEnv = TestWorkflowEnvironment.newInstance();
-    var worker = testEnv.newWorker(TaskQueue.DEMO_V1);
-    worker.registerWorkflowImplementationTypes(DemoWorkflowImpl.class);
-    worker.registerActivitiesImplementations((RemoteDemoActivities) input -> input + " extended",
-        localDemoActivities);
+    var localWorker = testEnv.newWorker(TaskQueue.WORKFLOW_V1);
+    localWorker.registerWorkflowImplementationTypes(DemoWorkflowImpl.class);
+    localWorker.registerActivitiesImplementations(localDemoActivities);
+
+    var remoteWorker = testEnv.newWorker(TaskQueue.TASK_WORKER_V1);
+    remoteWorker.registerActivitiesImplementations(
+        (SimpleRemoteActivity) input -> input + " extended",
+        (LongRunningRemoteActivity) () -> LOGGER.info("longRunningTaskInRemoteWorker called")
+    );
 
     testEnv.start();
 
     var client = testEnv.getWorkflowClient();
     var workflow = client.newWorkflowStub(
         DemoWorkflow.class,
-        WorkflowOptions.newBuilder().setTaskQueue(TaskQueue.DEMO_V1).build()
+        WorkflowOptions.newBuilder().setTaskQueue(TaskQueue.WORKFLOW_V1).build()
     );
     var workflowExecution = WorkflowClient.start(workflow::exec, new WorkflowInput("John", "Doe"));
     assertThat(workflowExecution.getWorkflowId()).isNotBlank();
